@@ -93,9 +93,9 @@ The script must be run as the `root` user, so `/etc/master.passwd` can be read.
 Then you can add the `ldif` files to your running OpenBSD `ldapd` server.
 
 
-        ldapadd -H ldap://ldap01.whattheserver.me -D 'cn=admin,dc=whattheserver,dc=me' -x -W -f base.ldif
-        ldapadd -H ldap://ldap01.whattheserver.me -D 'cn=admin,dc=whattheserver,dc=me' -x -W -f group.ldif
-        ldapadd -H ldap://ldap01.whattheserver.me -D 'cn=admin,dc=whattheserver,dc=me' -x -W -f passwd.ldif
+        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f base.ldif
+        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f group.ldif
+        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f passwd.ldif
 
 
 You will want to `compact` and `index` your OpenBSD `ldapd` database.
