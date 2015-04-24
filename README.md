@@ -73,7 +73,7 @@ With OpenBSD configured in this way, user authentication happens completely nati
 You must have `openldap-client` installed.
 
 
-        pkg_add openldap-client
+    pkg_add openldap-client
 
 
 If you have the file `/etc/myname` on your system with your domain name in it,
@@ -85,24 +85,24 @@ If you have the file `/etc/myname` on your system with your domain name in it,
 The script must be run as the `root` user, so `/etc/master.passwd` can be read.
 
 
-        ypldap-migration
-        #  or specify the domain
-        ypldap-migration example.com
+    ypldap-migration
+    #  or specify the domain
+    ypldap-migration example.com
 
 
 Then you can add the `ldif` files to your running OpenBSD `ldapd` server.
 
 
-        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f base.ldif
-        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f group.ldif
-        ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f passwd.ldif
+    ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f base.ldif
+    ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f group.ldif
+    ldapadd -H ldap://ldap01.example.com -D 'cn=admin,dc=example,dc=com' -x -W -f passwd.ldif
 
 
 You will want to `compact` and `index` your OpenBSD `ldapd` database.
 
 
-        ldapctl compact
-        ldapctl index
+    ldapctl compact
+    ldapctl index
 
 
 ####### vim: set ts=4 sw=4 tw=80 et :######
