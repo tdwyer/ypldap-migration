@@ -28,7 +28,7 @@
 #
 BEGIN {
   MYNAME=ARGV[1]
-  delete ARGV[1]
+  delete ARGV
 
   MYNAME_FILE="/etc/myname"
   PASSWD_FILE="/etc/master.passwd"
