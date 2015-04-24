@@ -1,0 +1,279 @@
+#!/usr/bin/awk -f
+#
+###############################################################################
+#                                                                             #
+# Copyright (c) 2015 Thomas Dwyer. All rights reserved.                       #
+#                                                                             #
+# Redistribution and use in source and binary forms, with or without          #
+# modification, are permitted provided that the following conditions          #
+# are met:                                                                    #
+# 1. Redistributions of source code must retain the above copyright           #
+#    notice, this list of conditions and the following disclaimer.            #
+# 2. Redistributions in binary form must reproduce the above copyright        #
+#    notice, this list of conditions and the following disclaimer in the      #
+#    documentation and/or other materials provided with the distribution.     #
+#                                                                             #
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR        #
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES   #
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.     #
+# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,            #
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT    #
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,   #
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY       #
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT         #
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF    #
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.           #
+#                                                                             #
+###############################################################################
+#
+BEGIN {
+  MYNAME=ARGV[1]
+  delete ARGV[1]
+
+  MYNAME_FILE="/etc/myname"
+  PASSWD_FILE="/etc/master.passwd"
+  GROUP_FILE="/etc/group"
+
+  if ( ! MYNAME ) {
+    getline MYNAME <MYNAME_FILE;  close(MYNAME_FILE)
+  }
+
+  split(MYNAME,MYNAMES,".")
+  DOMAIN_NAME=MYNAMES[(length(MYNAMES) - 1)]
+  DOMAIN_TLD=MYNAMES[length(MYNAMES)]
+  USERS_OU="People"
+  GROUP_OU="Group"
+
+  START_UID=1000
+  STOP_UID=3000
+  START_GID=START_UID
+  STOP_GID=STOP_UID
+
+  OUTPUT_BASE_DIR=ENVIRON["PWD"]
+  BASE_LDIF=(OUTPUT_BASE_DIR"/base.ldif")
+  PASSWD_LDIF=(OUTPUT_BASE_DIR"/passwd.ldif")
+  GROUP_LDIF=(OUTPUT_BASE_DIR"/group.ldif")
+
+  rv=_main()
+  exit rv
+}
+
+function _main(  rv) {
+  #
+  # This program will read in PASSWD_FILE and GROUP_FILE
+  # Then will create
+  #   base.ldif,passwd.ldif,group.ldif
+  # Which are compatable with the provided
+  #   core.schema,nis.schema,inetorgperson.schema
+  # These schemas were made for and tested on
+  #   OpenBSD-5.7 ldapd
+  #   OpenBSD-5.7 ypldap
+  #
+  rv=_get_passwd()
+  rv+=_get_group()
+
+  print "" >BASE_LDIF;    close(BASE_LDIF)
+  rv+=_make_base_ldif(USERS_OU,GROUP_OU,DOMAIN_NAME,DOMAIN_TLD)
+
+  print "" >PASSWD_LDIF;  close(PASSWD_LDIF)
+  rv+=_make_passwd_ldif()
+
+  print "" >GROUP_LDIF;   close(GROUP_LDIF)
+  rv+=_make_group_ldif()
+
+  return rv
+}
+
+function _get_passwd(  rv,line,array) {
+  #
+  # Read PASSWD_FILE into array PASSWD with line as key
+  #
+  while ((getline line < PASSWD_FILE) > 0) {
+    PASSWD[line]++
+  }; close(PASSWD_FILE)
+
+  return rv
+}
+
+function _get_group(  rv,line,array) {
+  #
+  # Read GROUP_FILE into array GROUP with line as key
+  #
+  while ((getline line < GROUP_FILE) > 0) {
+    GROUP[line]++
+  }; close(GROUP_FILE)
+
+  return rv
+}
+
+function _make_passwd_ldif(  rv,line,array) {
+  #
+  # For line in PASSWD array
+  # _write_passwd_ldif() if START_UID <= UID =< STOP_UID
+  #
+  for (line in PASSWD) {
+    split(line,array,":")
+      if (array[3] >= START_UID && array[3] <= STOP_UID) {
+        rv=_write_passwd_ldif(USERS_OU,
+                              DOMAIN_NAME,
+                              DOMAIN_TLD,
+                              array[1],
+                              array[2],
+                              array[3],
+                              array[4],
+                              array[5],
+                              array[6],
+                              array[7],
+                              array[8],
+                              array[9],
+                              array[10])
+      }
+    delete array
+  }
+
+  return rv
+}
+
+function _make_group_ldif(  rv,line,array) {
+  #
+  # For line in GROUP array
+  # _write_group_ldif() if START_GID <= GID <= STOP_GID
+  #
+  for (line in GROUP) {
+    split(line,array,":")
+      if (array[3] >= START_GID && array[3] <= STOP_GID) {
+        rv=_write_group_ldif(GROUP_OU,
+                             DOMAIN_NAME,
+                             DOMAIN_TLD,
+                             array[1],
+                             array[2],
+                             array[3],
+                             array[4])
+      }
+    delete array
+  }
+
+  return rv
+}
+
+function _make_base_ldif(users_ou,group_ou,domain_name,domain_tld,  rv,s) {
+  #
+  # Create multi-line string 's' and include the values passed as parameters
+  # Then append the string 's' to the file BASE_LDIF
+  #
+  s=("dn: dc="domain_name",dc="domain_tld"\n")
+  s=(s"dc: "domain_name"\n")
+  s=(s"objectClass: top\n")
+  s=(s"objectClass: domain\n")
+  s=(s"\n")
+  s=(s"dn: ou="users_ou",dc="domain_name",dc="domain_tld"\n")
+  s=(s"ou: "users_ou"\n")
+  s=(s"objectClass: top\n")
+  s=(s"objectClass: organizationalUnit\n")
+  s=(s"\n")
+  s=(s"dn: ou="group_ou",dc="domain_name",dc="domain_tld"\n")
+  s=(s"ou: "group_ou"\n")
+  s=(s"objectClass: top\n")
+  s=(s"objectClass: organizationalUnit\n")
+
+  s=(s"\n")
+  print s > BASE_LDIF; close(BASE_LDIF)
+
+  return rv
+}
+
+function _write_passwd_ldif(users_ou,
+                            domain_name,
+                            domain_tld,
+                            login_name,
+                            shadowPassword,
+                            uidNumber,
+                            gidNumber,
+                            userClass,
+                            shadowLastChange,
+                            shadowExpire,
+                            gecos,
+                            homeDirectory,
+                            loginShell,
+                            rv,s)
+{
+  #
+  # Create multi-line string 's' and include the values passed as parameters
+  # Then append the string 's' to the file PASSWD_LDIF
+  #
+  if ( ! userClass ) {
+    userClass="default"
+  }
+
+  user_passwd=("{BSDAUTH}"login_name)
+
+  s=("dn: uid="login_name",ou="users_ou",dc="domain_name",dc="domain_tld"\n")
+  s=(s"uid: "login_name"\n")
+  s=(s"cn: "gecos"\n")
+  s=(s"objectClass: account\n")
+  s=(s"objectClass: posixAccount\n")
+  s=(s"objectClass: top\n")
+  s=(s"objectClass: shadowAccount\n")
+  s=(s"userPassword: "user_passwd"\n")
+  s=(s"shadowPassword: "shadowPassword"\n")
+  s=(s"uidNumber: "uidNumber"\n")
+  s=(s"gidNumber: "gidNumber"\n")
+  s=(s"userClass: "userClass"\n")
+  s=(s"shadowLastChange: "shadowLastChange"\n")
+  s=(s"shadowExpire: "shadowExpire"\n")
+  s=(s"gecos: "gecos"\n")
+  s=(s"homeDirectory: "homeDirectory"\n")
+  s=(s"loginShell: "loginShell"\n")
+
+  s=(s"\n")
+  print s >> PASSWD_LDIF; close(PASSWD_LDIF)
+
+  return rv
+}
+
+function _write_group_ldif(group_ou,
+                           domain_name,
+                           domain_tld,
+                           group_name,
+                           userPassword,
+                           gidNumber,
+                           group_members,
+                           rv,s,members)
+{
+  #
+  # Create multi-line string 's' and include the values passed as parameters
+  # If there are group_members
+  #   if there are multiple members separated by a comma ,
+  #     split the comma separated string into the array members
+  #     for each member in array members
+  #       append the string 'memberUid: username' to the string 's'
+  #   else
+  #     append the string 'memberUid: group_members'
+  # Append the string 's' to the file GROUP_LDIF
+  #
+  s=("dn: cn="group_name",ou="group_ou",dc="domain_name",dc="domain_tld"\n")
+  s=(s"objectClass: posixGroup\n")
+  s=(s"objectClass: top\n")
+  s=(s"cn: "group_name"\n")
+  s=(s"userPassword: "userPassword"\n")
+  s=(s"gidNumber: "gidNumber"\n")
+
+  if (group_members) {
+    if (index(group_members,",") ) {
+      split(group_members,members,",")
+        for (i=1; i<=length(members); i++) {
+          s=(s"memberUid: "members[i]"\n")
+        }
+      delete members
+    }
+    else {
+      s=(s"memberUid: "group_members"\n")
+    }
+  }
+
+  s=(s"\n")
+  print s >> GROUP_LDIF; close(GROUP_LDIF)
+
+  return rv
+}
+
