@@ -20,6 +20,45 @@ The following `ldif` files will be created:
 * passwd.ldif = Contains the users read in from `/etc/master.passwd`
 
 
+---
+
+
+**/ldap**
+
+
+Included in the `ldap` directory is a set of LDAP `schema` files for use with
+ OpenBSD's `ldapd` and `ypldap`.
+
+
+ I have modified the `nis.schema` which ships with OpenBSD-5.7 in order
+ for the `posixAccount` to support the attributes
+ `shadowPassword`, `shadowLastChange`, `shadowExpire`, and `userClass`.
+ You must use these `ldap schema` files in order to use this `ypldap` system.
+
+
+* shadowPassword = Stores the users OpenBSD Blowfish password hash used by YP
+    - userPassword = set to `{BSDAUTH}username` so LDAP Binds happen ageist YP and the Blowfish password hash
+* shadowLastChange = Used as time by which user must change their password: `change`
+* shadowExpire = Use as time the user's account expired: `expire`
+* userClass = Used as the users Login Class: `class`
+
+
+---
+
+
+**/etc**
+
+
+Included in the `etc` directory are configuration files for OpenBSD's `ldapd` and `ypldap`
+
+
+With OpenBSD configured in this way, user authentication happens completely natively.
+ Users can authenticate agents the `default` login class. The passwords are
+ checked against a normal OpenBSD Blowfish password hash via the YP wrapper service `ypldap`.
+ LDAP Binds are checked via {BSDAUTH} which uses YP to check the Blowfish password hash.
+
+
+
 ### Tested and Used on:
 
 
