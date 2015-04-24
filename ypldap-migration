@@ -72,13 +72,13 @@ function _main(  rv) {
   rv=_get_passwd()
   rv+=_get_group()
 
-  print "" >BASE_LDIF;    close(BASE_LDIF)
+  printf "%s", "" >BASE_LDIF;    close(BASE_LDIF)
   rv+=_make_base_ldif(USERS_OU,GROUP_OU,DOMAIN_NAME,DOMAIN_TLD)
 
-  print "" >PASSWD_LDIF;  close(PASSWD_LDIF)
+  printf "%s", "" >PASSWD_LDIF;  close(PASSWD_LDIF)
   rv+=_make_passwd_ldif()
 
-  print "" >GROUP_LDIF;   close(GROUP_LDIF)
+  printf "%s", "" >GROUP_LDIF;   close(GROUP_LDIF)
   rv+=_make_group_ldif()
 
   return rv
@@ -176,7 +176,6 @@ function _make_base_ldif(users_ou,group_ou,domain_name,domain_tld,  rv,s) {
   s=(s"objectClass: top\n")
   s=(s"objectClass: organizationalUnit\n")
 
-  s=(s"\n")
   print s > BASE_LDIF; close(BASE_LDIF)
 
   return rv
@@ -205,7 +204,9 @@ function _write_passwd_ldif(users_ou,
     userClass="default"
   }
 
-  user_passwd=("{BSDAUTH}"login_name)
+  if ( ! gecos ) {
+    gecos=login_name
+  }
 
   s=("dn: uid="login_name",ou="users_ou",dc="domain_name",dc="domain_tld"\n")
   s=(s"uid: "login_name"\n")
@@ -214,7 +215,7 @@ function _write_passwd_ldif(users_ou,
   s=(s"objectClass: posixAccount\n")
   s=(s"objectClass: top\n")
   s=(s"objectClass: shadowAccount\n")
-  s=(s"userPassword: "user_passwd"\n")
+  s=(s"userPassword: {BSDAUTH}"login_name"\n")
   s=(s"shadowPassword: "shadowPassword"\n")
   s=(s"uidNumber: "uidNumber"\n")
   s=(s"gidNumber: "gidNumber"\n")
@@ -225,7 +226,6 @@ function _write_passwd_ldif(users_ou,
   s=(s"homeDirectory: "homeDirectory"\n")
   s=(s"loginShell: "loginShell"\n")
 
-  s=(s"\n")
   print s >> PASSWD_LDIF; close(PASSWD_LDIF)
 
   return rv
@@ -237,18 +237,18 @@ function _write_group_ldif(group_ou,
                            group_name,
                            userPassword,
                            gidNumber,
-                           group_members,
-                           rv,s,members)
+                           memberUid,
+                           rv,s,array)
 {
   #
   # Create multi-line string 's' and include the values passed as parameters
-  # If there are group_members
+  # If there are memberUid
   #   if there are multiple members separated by a comma ,
   #     split the comma separated string into the array members
   #     for each member in array members
   #       append the string 'memberUid: username' to the string 's'
   #   else
-  #     append the string 'memberUid: group_members'
+  #     append the string 'memberUid: memberUid'
   # Append the string 's' to the file GROUP_LDIF
   #
   s=("dn: cn="group_name",ou="group_ou",dc="domain_name",dc="domain_tld"\n")
@@ -258,20 +258,19 @@ function _write_group_ldif(group_ou,
   s=(s"userPassword: "userPassword"\n")
   s=(s"gidNumber: "gidNumber"\n")
 
-  if (group_members) {
-    if (index(group_members,",") ) {
-      split(group_members,members,",")
-        for (i=1; i<=length(members); i++) {
-          s=(s"memberUid: "members[i]"\n")
+  if (memberUid) {
+    if (index(memberUid,",") ) {
+      split(memberUid,array,",")
+        for (i=1; i<=length(array); i++) {
+          s=(s"memberUid: "array[i]"\n")
         }
-      delete members
+      delete array
     }
     else {
-      s=(s"memberUid: "group_members"\n")
+      s=(s"memberUid: "memberUid"\n")
     }
   }
 
-  s=(s"\n")
   print s >> GROUP_LDIF; close(GROUP_LDIF)
 
   return rv
