@@ -38,9 +38,10 @@ BEGIN {
     getline MYNAME <MYNAME_FILE;  close(MYNAME_FILE)
   }
 
-  split(MYNAME,MYNAMES,".")
-  DOMAIN_NAME=MYNAMES[(length(MYNAMES) - 1)]
-  DOMAIN_TLD=MYNAMES[length(MYNAMES)]
+  split(MYNAME,array,".")
+    DOMAIN_NAME=array[(length(array) - 1)]
+    DOMAIN_TLD=array[length(array)]
+  delete array
   USERS_OU="People"
   GROUP_OU="Group"
 
