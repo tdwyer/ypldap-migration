@@ -190,7 +190,7 @@ function _write_passwd_ldif(users_ou,
                             uidNumber,
                             gidNumber,
                             userClass,
-                            shadowLastChange,
+                            modifyTimestamp,
                             shadowExpire,
                             gecos,
                             homeDirectory,
@@ -221,7 +221,7 @@ function _write_passwd_ldif(users_ou,
   s=(s"uidNumber: "uidNumber"\n")
   s=(s"gidNumber: "gidNumber"\n")
   s=(s"userClass: "userClass"\n")
-  s=(s"shadowLastChange: "shadowLastChange"\n")
+  s=(s"modifyTimestamp: "modifyTimestamp"\n")
   s=(s"shadowExpire: "shadowExpire"\n")
   s=(s"gecos: "gecos"\n")
   s=(s"homeDirectory: "homeDirectory"\n")
