@@ -155,7 +155,7 @@ objectclass ( 1.3.6.1.1.1.2.0 NAME 'posixAccount'
 	DESC 'Abstraction of an account with POSIX attributes'
 	MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory )
 	MAY ( userPassword $ loginShell $ gecos $ description $
-        userclass $  shadowPassword $ shadowExpire $ shadowLastChange ) )
+        userclass $  shadowPassword $ shadowExpire $ modifyTimestamp ) )
 
 objectclass ( 1.3.6.1.1.1.2.1 NAME 'shadowAccount'
 	SUP top

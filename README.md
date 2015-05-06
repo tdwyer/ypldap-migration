@@ -32,13 +32,13 @@ Included in the `ldap` directory is a set of LDAP `schema` files for use with
 
  I have modified the `nis.schema` which ships with OpenBSD-5.7 in order
  for the `posixAccount` to support the attributes
- `shadowPassword`, `shadowLastChange`, `shadowExpire`, and `userClass`.
+ `shadowPassword`, `shadowExpire`, `modifyTimestamp`, and `userClass`.
  You must use these `ldap schema` files in order to use this `ypldap` system.
 
 
 * shadowPassword = Stores the users OpenBSD Blowfish password hash used by YP
     - userPassword = set to `{BSDAUTH}username` so LDAP Binds happen ageist YP and the Blowfish password hash
-* shadowLastChange = Used as time by which user must change their password: `change`
+* modifyTimestamp = Used as time by which user must change their password: `change`
 * shadowExpire = Use as time the user's account expired: `expire`
 * userClass = Used as the users Login Class: `class`
 
